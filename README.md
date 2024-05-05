@@ -11,7 +11,7 @@ Welcome to the Wallpaper Changer Chrome Extension! This extension allows you to 
 
 ## Installation
 
-1. **Download**: Download the project files as a ZIP archive from the [GitHub repository](#https://github.com/samyack15/Wallaper-Changer-Extension.git).
+1. **Download**: Download the project files as a ZIP archive from the [GitHub repository](https://github.com/samyack15/Wallaper-Changer-Extension.git).
 2. **Unzip**: Unzip the downloaded file to a location on your computer.
 3. **Enable Developer Mode**: Open the Chrome browser and go to `chrome://extensions/`.
 4. **Load Unpacked**: Enable "Developer mode" by toggling the switch in the top right corner. Then, click on the "Load unpacked" button and select the unzipped folder containing the extension files.
