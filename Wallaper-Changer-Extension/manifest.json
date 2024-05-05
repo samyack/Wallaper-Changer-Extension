@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "WallPaper Changer",
     "description": "Changes wallpaper of new tab",
-    "version": "2.0",
+    "version": "2.1",
     "action" :{
         "default_icon": "/images/icons8-google-chrome-24.png",
         "default_popup": "popup.html"
@@ -15,7 +15,7 @@
     "chrome_url_overrides": {
         "newtab": "newtab.html"
     },
-    "permissions": ["storage", "alarms"],
+    "permissions": ["storage", "alarms","management"],
     "background": {
         "service_worker": "backgroundChanger.js"
     }

@@ -3,9 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallpaper Changer</title>
+    <title>Extension Toggle</title>
+    <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-        <button>on/off</button>
+    <div class="container">
+        <h1>Wallpaper Changer is</h1>
+        <label class="switch">
+            <input type="checkbox" id="toggleSwitch">
+            <span class="slider"></span>
+        </label>
+        <p id="toggleStatus">Extension is currently OFF</p>
+        <button id="prevButton">Previous Wallpaper</button>
+        <button id="nextButton">Next Wallpaper</button>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>

@@ -1,22 +1,35 @@
-const imageLinks = [
-    "https://images.unsplash.com/photo-1542384701-9eaf70a33558?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1551641506-ee5bf4cb45f1?q=80&w=2968&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1522961364055-ae8ee2526003?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1503385824845-4f3407ce5e03?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1517210067403-d86a5703516f?q=80&w=2831&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/flagged/photo-1575555201693-7cd442b8023f?q=80&w=3000&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1539278311020-fe8d86254350?q=80&w=2938&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1563503136947-cc262fa1e423?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://images.unsplash.com/photo-1588729626776-8d97bdce8e08?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-    "https://i.pinimg.com/originals/7a/3e/36/7a3e36cf8e864d6fb605533a5c5522d8.jpg"
-];
+let currentBackgroundURL = null;
+let lastUsedIndex = -1; // Track the index of the last used image
 
-let usedIndexes = []; // Array to track used indexes
+// Set initial background image on extension load
+setInitialBackground();
 
 // Set initial alarm for midnight
 setMidnightAlarm();
 
-// Function to set alarm for midnight
+// Function to set initial background image
+function setInitialBackground() {
+    // Check if background image has already been set
+    chrome.storage.local.get(['backgroundURL', 'lastUsedIndex'], function(data) {
+        if (!chrome.runtime.lastError && data && data.backgroundURL) {
+            currentBackgroundURL = data.backgroundURL;
+            lastUsedIndex = data.lastUsedIndex !== undefined ? data.lastUsedIndex : -1;
+            updateBackground(currentBackgroundURL);
+        } else {
+            // If not set or error occurred, select a random image link
+            fetch('imageLinks.json')
+                .then(response => response.json())
+                .then(data => {
+                    const imageLinks = data.imageLinks;
+                    lastUsedIndex = -1; // Reset last used index
+                    selectNewBackground(imageLinks);
+                })
+                .catch(error => console.error('Error fetching image links:', error));
+        }
+    });
+}
+
+// Set alarm for midnight
 function setMidnightAlarm() {
     const now = new Date();
     const midnight = new Date(
@@ -40,44 +53,71 @@ function setMidnightAlarm() {
 // Handle alarm
 chrome.alarms.onAlarm.addListener(function(alarm) {
     if (alarm.name === 'midnightAlarm') {
-        // Reset used indexes array if all images are used
-        if (usedIndexes.length === imageLinks.length) {
-            usedIndexes = [];
-        }
-
-        // Get a random unused index
-        let randomIndex;
-        do {
-            randomIndex = Math.floor(Math.random() * imageLinks.length);
-        } while (usedIndexes.includes(randomIndex));
-        usedIndexes.push(randomIndex);
-
-        // Get new image URL using random index
-        const newBackgroundURL = imageLinks[randomIndex];
-
-        // Update background
-        chrome.action.setBadgeText({text: 'BG'});
-        chrome.action.setBadgeBackgroundColor({color: [255, 0, 0, 255]});
-        chrome.action.setTitle({title: 'Changing Background'});
-
-        // Send message to update background
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            chrome.scripting.executeScript({
-                target: {tabId: tabs[0].id},
-                function: updateBackground,
-                args: [newBackgroundURL]
-            });
-        });
-
         // Reset alarm for next midnight
         setMidnightAlarm();
+        // Select a new background image
+        fetch('imageLinks.json')
+            .then(response => response.json())
+            .then(data => {
+                const imageLinks = data.imageLinks;
+                selectNewBackground(imageLinks);
+            })
+            .catch(error => console.error('Error fetching image links:', error));
     }
 });
 
+// Function to select a new background image
+function selectNewBackground(imageLinks) {
+    let randomIndex = Math.floor(Math.random() * imageLinks.length);
+    while (randomIndex === lastUsedIndex) {
+        // Ensure the new index is different from the last used index
+        randomIndex = Math.floor(Math.random() * imageLinks.length);
+    }
+    lastUsedIndex = randomIndex;
+    currentBackgroundURL = imageLinks[randomIndex];
+    // Update the background image
+    updateBackground(currentBackgroundURL);
+    // Save the background URL and last used index
+    chrome.storage.local.set({ 'backgroundURL': currentBackgroundURL, 'lastUsedIndex': lastUsedIndex });
+}
+
 // Function to update background
 function updateBackground(newBackgroundURL) {
-    document.body.style.backgroundImage = `url('${newBackgroundURL}')`;
-    localStorage.setItem('backgroundURL', newBackgroundURL);
-    // console.log("new bg");
-    // location.reload();
+    // Check if document is defined (avoid error when running in background)
+    if (typeof document !== 'undefined') {
+        document.body.style.backgroundImage = `url('${newBackgroundURL}')`;
+    }
 }
+
+// Listen for messages from the popup or other parts of the extension
+chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+    if (message.command === "changeWallpaper") {
+        const direction = message.direction;
+        fetch('imageLinks.json')
+            .then(response => response.json())
+            .then(data => {
+                const imageLinks = data.imageLinks;
+                if (direction === 'previous') {
+                    // Calculate the index of the previous wallpaper
+                    let previousIndex = lastUsedIndex - 1;
+                    if (previousIndex < 0) {
+                        previousIndex = imageLinks.length - 1;
+                    }
+                    lastUsedIndex = previousIndex;
+                } else if (direction === 'next') {
+                    // Calculate the index of the next wallpaper
+                    let nextIndex = lastUsedIndex + 1;
+                    if (nextIndex >= imageLinks.length) {
+                        nextIndex = 0;
+                    }
+                    lastUsedIndex = nextIndex;
+                }
+                currentBackgroundURL = imageLinks[lastUsedIndex];
+                // Update the background image
+                updateBackground(currentBackgroundURL);
+                // Save the background URL and last used index
+                chrome.storage.local.set({ 'backgroundURL': currentBackgroundURL, 'lastUsedIndex': lastUsedIndex });
+            })
+            .catch(error => console.error('Error fetching image links:', error));
+    }
+});
